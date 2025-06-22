@@ -4,175 +4,180 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="./favicon/favicon-16x16.png" type="image/png">
     <title>Pokédex</title>
-
-
     <style>
+
+        @font-face {
+            font-family: poke-sans;
+            src: url("font/PokemonSolidNormal-xyWR.ttf");
+        }
+
+        * {
+            padding: 0;
+            margin: 0;
+            box-sizing: border-box;
+            font-family: poke-sans;
+            letter-spacing: 2.75px;
+
+        }
         body {
-            font-family: Arial, sans-serif;
+            font-family: poke-sans, sans-serif;
             text-align: center;
-            background-color: linear-gradient(to bottom, #f3f3f3, #d1d1d1);
+            background: linear-gradient(#e63946, lightblue, #f8f9fa);
+            min-height: 100vh;
         }
-
+        #title {
+            color: #39bedf;
+            text-shadow: 2px 1px 1px #333;
+        }
         .pokedex {
-            margin: 20px auto;
-            max-width: 400px;
-            background-color: linear gradient(to bottom, #ffcc00, #ff9900);
-            border-radius: 10px;
-            padding: 20px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            margin: 40px auto 0 auto;
+            width: 350px;
+            border-radius: 30px;
+            padding: 30px 20px 20px 20px;
+            background: rgb(231, 226, 226);
+            box-shadow: 6px 8px 2px #333;
+            border: 6px solid #b71c1c;
+            position: relative;
         }
-
-        .search input {
+        #search-input {
             margin: 5px;
             padding: 5px;
-            width: 150px;
+            width: 20%;
         }
-
         button {
             padding: 10px;
             margin: 10px;
             width: 150px;
+            border-radius: 10px;
+            border: solid 1.5px #333;
         }
-
+        #pokemon-name, #pokemon-type {
+            text-transform: capitalize;
+            padding-bottom: 10px;
+        }
         .pokemon-display {
             display: flex;
             align-items: center;
             justify-content: space-between;
         }
-
         .pokemon-info img {
             width: 150px;
             height: 150px;
         }
-
         .pokemon-info h2,
         .pokemon-info p {
             margin: 5px 0;
         }
     </style>
-
-
 </head>
 
 <body>
-
-
-    <h1>Pokédex</h1>
-    <div>
-        <input type="text" id="search-name" placeholder="Nome do Pokémon">
-        <input type="number" id="search-number" placeholder="Número do Pokémon">
-        <button id="search-btn">Buscar</button>
-    </div>
+    <h1 id="title">Pokédex</h1>
+    <form class="buscar" id="search-form">
+        <div>
+            <input type="search" id="search-input" placeholder="Nome ou número do Pokémon" required>
+            <button id="search-btn" type="submit">Buscar</button>
+        </div>
+    </form>
     <div class="pokedex">
-        <div class="screen">
+        <div class="screen pokemon-info">
             <img id="pokemon-image" src="" alt="Imagem do Pokémon">
-            <h2 id="pokemon-name">Nome</h2>
+            <h2><span id="pokemon-name">Nome</span> <span id="pokemon-id"></span></h2>
             <p id="pokemon-type">Tipo</p>
         </div>
         <div class="controls">
-            <button id="prev-btn">Anterior</button>
-            <button id="next-btn">Próximo</button>
+            <button id="prev-btn" type="button">Anterior</button>
+            <button id="next-btn" type="button">Próximo</button>
         </div>
     </div>
 
     <script>
-        /* deixei algumas coisas em ingles por ser mais facil de escrever e vários comentarios sobre 
-        o que cada parte faz pra melhor entendimento */
-
-
-        // a lendária api de pokemon ta aqui 🙏
+        // API de pokemon 
         var apiUrl = 'https://pokeapi.co/api/v2/pokemon/';
-        // deixa o primeiro pokemon com id 1, ja q é o primeiro(não existe pokemon com id 0)
+        // começa pelo primeiro pokemon
         var currentPokemonId = 1;
 
-        //obtem o nome pelo id 
-        var searchNameInput = document.getElementById('search-name');
-        //obtem o numero pelo id
-        var searchNumberInput = document.getElementById('search-number');
-        //obtem o botão de busca pelo id
-        var searchButton = document.getElementById('search-btn');
-        //obtem os botoes 'anterior' e 'proximo' pelo id
-        var prevButton = document.getElementById('prev-btn');
-        var nextButton = document.getElementById('next-btn');
-        //obtem os elementos que mostram a imagem, nome e tipo do pokemon pelo id
-        var pokemonImage = document.getElementById('pokemon-image');
-        var pokemonName = document.getElementById('pokemon-name');
-        var pokemonType = document.getElementById('pokemon-type');
+        // pega o id de elementos do HTML
+        var searchInput = document.getElementById('search-input'); // campo de busca 
+        var searchForm = document.getElementById('search-form');   // formulário de busca
+        var prevButton = document.getElementById('prev-btn');      // botão anterior
+        var nextButton = document.getElementById('next-btn');      // botão próximo
+        var pokemonImage = document.getElementById('pokemon-image'); // imagem do Pokémon
+        var pokemonName = document.getElementById('pokemon-name');   // nome do Pokémon
+        var pokemonId = document.getElementById('pokemon-id');   // id do Pokémon
+        var pokemonType = document.getElementById('pokemon-type');   // tipo do Pokémon
 
-        //função para buscar os dados do pokemon na API
-
+        // função para buscar pokemon por nome ou número
         function fetchPokemon(idOrName) {
-            //cria a URL para buscar o pokemon com base na id ou nome
+            // cria a URL pra buscar o pokemon com base no id ou nome
             var url = apiUrl + idOrName;
-
-            //faz a requisição para a API usando o comando fetch
+            // Faz a requisição para a API
             fetch(url)
                 .then(function (response) {
-                    //verifica se a resposta foi bem sucedida
-                    //caso não, emite um alerta e retorna
+                    // Verifica se a resposta foi bem-sucedida
                     if (!response.ok) {
                         alert("Pokémon não encontrado.");
                         return;
                     }
-                    /*caso sim, converte a resposta da API para JSON para que os dados recebidos
-                    possam ser manipulados/utilizáveis como objetos no javascript*/
+                    // Converte a resposta da API para JSON para que os dados possam ser usados como objetos no JavaScript
                     return response.json();
                 })
                 .then(function (data) {
-                    //chama a função para exibir os dados do pokemon na tela
-                    displayPokemon(data);
+                    // Se houver dados, exibe o Pokémon e atualiza o ID atual
+                    if (data) {
+                        displayPokemon(data);
+                        currentPokemonId = data.id; // Atualiza o ID atual
+                    }
                 })
                 .catch(function () {
-                    //exibe um alerta caso ocorra algum erro na requisição
-                    alert('Erro a buscar Pokémon')
-
+                    // Exibe um alerta em caso de erro na requisição
+                    alert('Erro ao buscar Pokémon');
                 });
         }
 
-        //função para exibir os dados do pokemon na tela
-
+        // função para mostrar os dados do Pokémon na tela
         function displayPokemon(data) {
-            //define a imagem do pokemon usando o sprite frontal fornecido pela API
+            // define a imagem do Pokémon usando o sprite frontal fornecido pela API
             pokemonImage.src = data.sprites.front_default;
-            //define o nome do pokemon fornecido pela API
+            //define a id do pokemon do lado do nome
+            pokemonId.textContent = " - " + data.id;
+            // define o nome do Pokémon
             pokemonName.textContent = data.name;
-            //define os tipos do pokemon e junta os tipos em uma string separada por vírgulas
+            // define os tipos do Pokémon, separados por vírgulas
             pokemonType.textContent = data.types.map(function (type) {
-                return type.type.name; //obtém o nome de cada tipo (ex: 'fire', 'water', etc)
-            }).join(',');//junta os tipos numa string separada por virgulas
+                return type.type.name; // obtém o nome de cada tipo
+            }).join(', '); //juntas os tipos em uma string, separando-os por vírgulas
         }
 
-        //Adiciona um evento de clique no botão de busca
-        searchButton.addEventListener('click', function () {
-            //obtém o valor do campo de busca por nome e remove espaços extras ('trim()')
-            var name = searchNameInput.value.trim().toLowerCase();
-            //obtém o valor do campo de busca por número 
-            var number = searchNumberInput.value.trim();
-            /*verifica se o campo de nome ou numero foi preenchido, se 1 deles foi preenchido, 
-            busca pelo valor correspondente*/
-            if (name) {
-                fetchPokemon(name);
-            } else if (number) {
-                fetchPokemon(number);
-            }
-        });
-        //adiciona eventos de clique nos botões 'anterior' e 'próximo'
-        prevButton.addEventListener('click', function () {
-            //verifica se a id atual é maior que 1, pois não existe pokemon com id 0
-            if (currentPokemonId > 1) {
-                currentPokemonId--; //decrementa a id atual
-                fetchPokemon(currentPokemonId); //busca o pokemon anterior
+        // evento do formulário de busca (impede o recarregamento da página)
+        searchForm.addEventListener('submit', function (event) {
+            event.preventDefault(); // Impede o comportamento padrão do formulário
+            var value = searchInput.value.trim().toLowerCase(); // pega o valor digitado e remove espaços extras
+            if (value) {
+                fetchPokemon(value); // busca o Pokémon pelo nome ou número
             }
         });
 
-        nextButton.addEventListener('click', function () {
-            currentPokemonId++; //incrementa a id do pokemon atual
-            fetchPokemon(currentPokemonId); //busca o próximo pokemon
+        // evento do botão "Anterior"
+        prevButton.addEventListener('click', function () {
+            // verifica se o ID atual é maior que um para evitar ids 0 ou negativas
+            if (currentPokemonId > 1) {
+                currentPokemonId--; //decrementa o id atual
+                fetchPokemon(currentPokemonId);
+            }
         });
-        //inicializa a pokedex buscando o primeiro pokemon
+
+        // evento do botão "Próximo"
+        nextButton.addEventListener('click', function () {
+            currentPokemonId++; //incrementa o id atual
+            // busca o próximo pokemon
+            fetchPokemon(currentPokemonId);
+        });
+
+        // inicializa com o primeiro pokemon
         fetchPokemon(currentPokemonId);
     </script>
 </body>
-
 </html>
