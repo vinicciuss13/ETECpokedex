@@ -24,11 +24,11 @@
         body {
             font-family: poke-sans, sans-serif;
             text-align: center;
-            background: linear-gradient(#e63946, lightblue, #f8f9fa);
+            background: radial-gradient(circle at top, #e94c4c, #c43c3c, #7a1f1f);
             min-height: 100vh;
-        }
+}
         #title {
-            color: #39bedf;
+            color: #3ccdf1;
             text-shadow: 2px 1px 1px #333;
         }
         .pokedex {
@@ -36,7 +36,7 @@
             width: 350px;
             border-radius: 30px;
             padding: 30px 20px 20px 20px;
-            background: rgb(231, 226, 226);
+            background: #b7d5ac;
             box-shadow: 6px 8px 2px #333;
             border: 6px solid #b71c1c;
             position: relative;
@@ -46,7 +46,8 @@
             padding: 5px;
             width: 20%;
         }
-        button {
+        button, prev-btn, next-btn,input {
+            background: #e4f2f7;
             padding: 10px;
             margin: 10px;
             width: 150px;
@@ -86,6 +87,9 @@
             <img id="pokemon-image" src="" alt="Imagem do Pokémon">
             <h2><span id="pokemon-name">Nome</span> <span id="pokemon-id"></span></h2>
             <p id="pokemon-type">Tipo</p>
+            <p id="pokemon-height">Altura</p>
+            <p id="pokemon-weight">Peso</p>
+            <p id="error-message"></p>
         </div>
         <div class="controls">
             <button id="prev-btn" type="button">Anterior</button>
@@ -96,87 +100,94 @@
     <script>
         // API de pokemon 
         var apiUrl = 'https://pokeapi.co/api/v2/pokemon/';
-        // começa pelo primeiro pokemon
+        // começa pelo Pokemon de id 1
         var currentPokemonId = 1;
 
         // pega o id de elementos do HTML
-        var searchInput = document.getElementById('search-input'); // campo de busca 
-        var searchForm = document.getElementById('search-form');   // formulário de busca
-        var prevButton = document.getElementById('prev-btn');      // botão anterior
-        var nextButton = document.getElementById('next-btn');      // botão próximo
-        var pokemonImage = document.getElementById('pokemon-image'); // imagem do Pokémon
-        var pokemonName = document.getElementById('pokemon-name');   // nome do Pokémon
-        var pokemonId = document.getElementById('pokemon-id');   // id do Pokémon
-        var pokemonType = document.getElementById('pokemon-type');   // tipo do Pokémon
+        var searchInput = document.getElementById('search-input'); 
+        var searchForm = document.getElementById('search-form');   
+        var prevButton = document.getElementById('prev-btn');      
+        var nextButton = document.getElementById('next-btn');      
+        var pokemonImage = document.getElementById('pokemon-image'); 
+        var pokemonName = document.getElementById('pokemon-name');   
+        var pokemonId = document.getElementById('pokemon-id');   
+        var pokemonType = document.getElementById('pokemon-type');   
+        var pokemonHeight = document.getElementById('pokemon-height'); 
+        var pokemonWeight = document.getElementById('pokemon-weight'); 
+        var errorMessage = document.getElementById('error-message'); 
 
         // função para buscar pokemon por nome ou número
         function fetchPokemon(idOrName) {
             // cria a URL pra buscar o pokemon com base no id ou nome
             var url = apiUrl + idOrName;
-            // Faz a requisição para a API
             fetch(url)
+
                 .then(function (response) {
-                    // Verifica se a resposta foi bem-sucedida
                     if (!response.ok) {
-                        alert("Pokémon não encontrado.");
+                        errorMessage.textContent = "Pokémon não encontrado.";
+                         pokemonImage.src = "";
+                        pokemonName.textContent = "Nome";
+                        pokemonId.textContent = "";
+                        pokemonHeight.textContent = "Altura";
+                        pokemonType.textContent = "Tipo";
+                        pokemonWeight.textContent = "Peso";
                         return;
+
                     }
-                    // Converte a resposta da API para JSON para que os dados possam ser usados como objetos no JavaScript
                     return response.json();
                 })
                 .then(function (data) {
-                    // Se houver dados, exibe o Pokémon e atualiza o ID atual
                     if (data) {
                         displayPokemon(data);
-                        currentPokemonId = data.id; // Atualiza o ID atual
+                        currentPokemonId = data.id; 
                     }
                 })
                 .catch(function () {
-                    // Exibe um alerta em caso de erro na requisição
-                    alert('Erro ao buscar Pokémon');
+                    errorMessage.textContent = "Erro ao buscar Pokémon.";
                 });
         }
 
-        // função para mostrar os dados do Pokémon na tela
+       
         function displayPokemon(data) {
-            // define a imagem do Pokémon usando o sprite frontal fornecido pela API
-            pokemonImage.src = data.sprites.front_default;
-            //define a id do pokemon do lado do nome
-            pokemonId.textContent = " - " + data.id;
-            // define o nome do Pokémon
+            errorMessage.textContent = "";
+
+            pokemonImage.src = data.sprites.versions["generation-v"]["black-white"].animated.front_default;
+            pokemonImage.alt = "Imagem do Pokémon " + data.name;
+
+            pokemonId.textContent = " -> nº " + data.id;
             pokemonName.textContent = data.name;
-            // define os tipos do Pokémon, separados por vírgulas
-            pokemonType.textContent = data.types.map(function (type) {
-                return type.type.name; // obtém o nome de cada tipo
-            }).join(', '); //juntas os tipos em uma string, separando-os por vírgulas
+
+            pokemonType.textContent = "Tipo: " + data.types.map(function (type) {
+             return type.type.name;
+            }).join(', ');
+
+            pokemonHeight.textContent = "Altura: " + (data.height / 10) + " m";
+            pokemonWeight.textContent = "Peso: " + (data.weight / 10) + " kg";
         }
 
         // evento do formulário de busca (impede o recarregamento da página)
         searchForm.addEventListener('submit', function (event) {
-            event.preventDefault(); // Impede o comportamento padrão do formulário
-            var value = searchInput.value.trim().toLowerCase(); // pega o valor digitado e remove espaços extras
+            event.preventDefault(); 
+            var value = searchInput.value.trim().toLowerCase(); 
             if (value) {
-                fetchPokemon(value); // busca o Pokémon pelo nome ou número
+                fetchPokemon(value); 
             }
         });
 
-        // evento do botão "Anterior"
         prevButton.addEventListener('click', function () {
-            // verifica se o ID atual é maior que um para evitar ids 0 ou negativas
+            
             if (currentPokemonId > 1) {
-                currentPokemonId--; //decrementa o id atual
+                currentPokemonId--; 
                 fetchPokemon(currentPokemonId);
             }
         });
 
-        // evento do botão "Próximo"
         nextButton.addEventListener('click', function () {
-            currentPokemonId++; //incrementa o id atual
-            // busca o próximo pokemon
+            currentPokemonId++; 
+            
             fetchPokemon(currentPokemonId);
         });
 
-        // inicializa com o primeiro pokemon
         fetchPokemon(currentPokemonId);
     </script>
 </body>
